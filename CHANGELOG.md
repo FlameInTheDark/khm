@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.0](https://github.com/FlameInTheDark/khm/compare/v1.1.0...v1.2.0) (2025-11-09)
+
+### Features
+
+* use debug.ReadBuildInfo to get version ([5fad4b9](https://github.com/FlameInTheDark/khm/commit/5fad4b96472f3dc4a53039ed32ef81c55c58ac0c))
+
 ## [1.1.0](https://github.com/FlameInTheDark/khm/compare/v1.0.0...v1.1.0) (2025-11-09)
 
 ### Features
