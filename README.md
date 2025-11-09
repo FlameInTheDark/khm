@@ -110,8 +110,6 @@ go test ./...
 go build -o khm
 ```
 
-
-
 ## Structure
 
 - `main.go`: CLI entry and commands
@@ -124,7 +122,3 @@ go build -o khm
 - Go 1.21+
 - Bubble Tea, Bubbles, Lipgloss
 - Minimal, focused dependency set
-
-## License
-
-MIT License (see LICENSE).
