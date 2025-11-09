@@ -11,12 +11,12 @@ permissions:
   pull-requests: write
 
 jobs:
-  release:
-    name: Semantic Release + GoReleaser
+  semantic_release:
+    name: Semantic Release
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout (full history for tags)
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -39,75 +39,6 @@ jobs:
             conventional-changelog-conventionalcommits
 
       - name: Run semantic-release
-        id: semantic
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Run semantic-release normally.
-          # It will:
-          # - Determine next version from commits
-          # - Create/update tag (vX.Y.Z)
-          # - Create/update GitHub Release
-          npx semantic-release
-
-          # Note:
-          # We intentionally do NOT try to parse semantic-release logs here.
-          # Instead, we rely on git tags afterwards to detect the latest release tag.
-
-      - name: Detect latest tag after semantic-release
-        id: detect_tag
-        run: |
-          # Refresh tags from origin to ensure we see tags pushed by semantic-release.
-          git fetch --tags --force
-
-          # If there are no tags, nothing to build.
-          if ! git describe --tags --abbrev=0 >/dev/null 2>&1; then
-            echo "No tags found after semantic-release; skipping GoReleaser."
-            echo "tag=" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          # Get the latest tag (semantic-release uses annotated tags following vX.Y.Z).
-          TAG=$(git describe --tags --abbrev=0)
-          echo "Latest tag detected: $TAG"
-
-          # Expose it as job output for later steps.
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-
-      - name: Skip GoReleaser if no tag
-        if: steps.detect_tag.outputs.tag == ''
-        run: |
-          echo "No release tag detected; GoReleaser will not run."
-
-      - name: Set up Go
-        if: steps.detect_tag.outputs.tag != ''
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: ./go.mod
-          cache: true
-
-      - name: Install GoReleaser
-        if: steps.detect_tag.outputs.tag != ''
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          install-only: true
-
-      - name: Checkout release tag
-        if: steps.detect_tag.outputs.tag != ''
-        run: |
-          TAG="${{ steps.detect_tag.outputs.tag }}"
-          echo "Checking out tag $TAG for GoReleaser"
-          git fetch --tags --force
-          git checkout "$TAG"
-          git describe --tags --abbrev=0
-
-      - name: Remove semantic-release temporary files
-        if: steps.detect_tag.outputs.tag != ''
-        run: |
-          rm -rf node_modules package-lock.json package.json
-
-      - name: Run GoReleaser
-        if: steps.detect_tag.outputs.tag != ''
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: goreleaser release --clean
+        run: npx semantic-release
