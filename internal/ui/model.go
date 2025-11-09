@@ -19,6 +19,7 @@ type Model struct {
 	list       list.Model
 	input      textinput.Model
 	collection *knownhosts.HostCollection
+	version    string
 
 	filterText string
 
@@ -144,7 +145,7 @@ func collectTypes(hosts []*knownhosts.Host) string {
 	return strings.Join(order, ",")
 }
 
-func NewModel(collection *knownhosts.HostCollection) *Model {
+func NewModel(collection *knownhosts.HostCollection, version string) *Model {
 
 	items := make([]list.Item, 0)
 
@@ -195,7 +196,10 @@ func NewModel(collection *knownhosts.HostCollection) *Model {
 	delegate.SetSpacing(0)
 
 	listModel := list.New(items, delegate, 80, 20)
-	listModel.Title = "SSH Known Hosts Manager (known_hosts)"
+	listModel.Title = "SSH Known Hosts Manager"
+	if version != "" {
+		listModel.Title += " " + version
+	}
 	listModel.SetShowHelp(false)
 	// Disable built-in status bar and pagination dots; we render our own status bar.
 	listModel.SetShowStatusBar(false)
@@ -227,6 +231,7 @@ func NewModel(collection *knownhosts.HostCollection) *Model {
 		list:               listModel,
 		input:              input,
 		collection:         collection,
+		version:            version,
 		moveTarget:         moveTarget,
 		baseKnownHostsPath: collection.File,
 		status:             "Ready",
