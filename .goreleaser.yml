@@ -1,0 +1,123 @@
+# GoReleaser configuration for khm
+# Docs: https://goreleaser.com/customization/
+
+project_name: khm
+
+# Use the latest GoReleaser behavior
+version: 2
+
+# Ensure we only run on tagged commits (e.g. v1.2.3),
+# which semantic-release will create.
+release:
+  # Let semantic-release create and manage the GitHub release.
+  # GoReleaser will only build and upload artifacts to an existing release.
+  disable: false
+  prerelease: auto
+  # GitHub repo metadata; update if you ever move the project.
+  github:
+    owner: FlameInTheDark
+    name: khm
+  # Do not create the release tag; semantic-release does that.
+  # We just reuse the existing tag created by semantic-release.
+  name_template: "{{ .Tag }}"
+
+# Don't run `go mod tidy` automatically; keep CI fast and deterministic.
+gomod:
+  proxy: true
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: khm
+    main: ./main.go
+    binary: khm
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - "-s -w"
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    # Adjust if you ever need different architectures per OS.
+    # goarm, gomips, etc. can be added if needed.
+
+archives:
+  - id: khm-archives
+    builds:
+      - khm
+    format_overrides:
+      - goos: windows
+        format: zip
+    format: tar.gz
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+
+signs:
+  # Disabled by default; uncomment and configure if you want signing.
+  # - artifacts: checksum
+  #   args: ["sign", "--armor", "--detach-sign", "--output", "${signature}", "${artifact}"]
+  #   cmd: gpg
+  #   env:
+  #     - "GPG_FINGERPRINT={{ .Env.GPG_FINGERPRINT }}"
+  #   signature: "${artifact}.sig"
+  #   stdin: ""
+
+changelog:
+  # We expect semantic-release to manage release notes,
+  # so keep this simple or disable if not needed.
+  use: git
+  sort: asc
+  filters:
+    exclude:
+      - "^chore"
+      - "^test"
+      - "^docs"
+      - "^ci"
+      - "^refactor"
+
+# Snapshot config for local testing:
+#   goreleaser release --snapshot --skip=publish --clean
+snapshot:
+  name_template: "{{ .Tag }}-next"
+
+# Configure how artifacts are uploaded:
+blobs:
+  # Not used for now. Can be configured later for S3/GCS.
+  # - provider: s3
+  #   bucket: your-bucket
+  #   folder: releases
+  #   ids:
+  #     - khm-archives
+  #     - khm-checksums
+  #   extra:
+  #     acl: private
+  #     region: us-east-1
+
+# Prevent GoReleaser from cleaning up the dist directory in non-CI environments
+# so it's easier to inspect locally. In CI we expect clean runs anyway.
+dist: dist
+
+# Enforce that we run in CI for actual releases.
+ci:
+  # If you want to allow local releases, set this to false.
+  # Recommended: keep true so real releases happen only in CI.
+  enabled: true
+
+# Ensure we only run on tags that look like a version as semantic-release creates.
+# This is defensive and aligns with semantic-release's behavior.
+git:
+  tag_sort: "-version:refname"

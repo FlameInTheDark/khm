@@ -1,0 +1,40 @@
+# Binaries
+ssh-knownhosts-manager
+build/
+*.exe
+
+# Go
+*.test
+*.out
+go.sum
+vendor/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Backup files
+*.backup*
+*.bak
+
+# Temporary files
+*.tmp
+*.temp
+
+# Local environment files
+.env
+.env.local
+
+# Test coverage
+coverage.out
+coverage.html
