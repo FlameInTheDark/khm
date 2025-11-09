@@ -409,32 +409,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, textinput.Blink
 			}
 
-		case "esc":
-			if m.showFilter {
-				m.showFilter = false
-				m.input.SetValue("")
-				m.filterText = ""
-				m.rebuildList()
-				m.status = "Filter cleared"
-				m.updateListSize()
-			} else if m.showStash {
-				m.showStash = false
-				m.moveTarget.SetValue("")
-				m.updateListSize()
-			} else if m.showStashView {
-				// Exit stash view back to known_hosts view
-				m.showStashView = false
-				m.status = "Switched to known_hosts view"
-				m.reloadKnownHosts()
-				m.updateListSize()
-			} else if strings.TrimSpace(m.filterText) != "" {
-				// allow clearing active filter even when prompt is closed
-				m.filterText = ""
-				m.rebuildList()
-				m.status = "Filter cleared"
-			}
-			return m, nil
-
 		case "enter":
 			if m.showFilter {
 				m.showFilter = false
@@ -525,6 +499,47 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var cmd tea.Cmd
 			m.moveTarget, cmd = m.moveTarget.Update(msg)
 			return m, cmd
+		}
+
+		// Global ESC handling (after other keys)
+		if msg.String() == "esc" {
+			if m.showHelp {
+				m.showHelp = false
+				m.status = "Closed help"
+				return m, nil
+			}
+			if m.showFilter {
+				m.showFilter = false
+				m.input.SetValue("")
+				m.filterText = ""
+				m.rebuildList()
+				m.status = "Filter cleared"
+				m.updateListSize()
+				return m, nil
+			}
+			if m.showStash {
+				m.showStash = false
+				m.moveTarget.SetValue("")
+				m.updateListSize()
+				m.status = "Stash canceled"
+				return m, nil
+			}
+			if m.showStashView {
+				// Exit stash view back to known_hosts view
+				m.showStashView = false
+				m.status = "Switched to known_hosts view"
+				m.reloadKnownHosts()
+				m.updateListSize()
+				return m, nil
+			}
+			if strings.TrimSpace(m.filterText) != "" {
+				// allow clearing active filter even when prompt is closed
+				m.filterText = ""
+				m.rebuildList()
+				m.status = "Filter cleared"
+				return m, nil
+			}
+			return m, nil
 		}
 	}
 
@@ -638,7 +653,7 @@ func (m Model) renderStatusBar() string {
 	var hints string
 	switch mode {
 	case "BROWSE":
-		hints = "[Enter details] [/ filter] [d delete] [s stash] [t stash view] [? help] [q quit]"
+		hints = ""
 	case "FILTER":
 		hints = "[Enter close] [Esc clear]"
 	case "STASH":
@@ -650,7 +665,7 @@ func (m Model) renderStatusBar() string {
 	case "DETAILS":
 		hints = "[Enter/Esc close]"
 	case "HELP":
-		hints = "[? close]"
+		hints = "[Esc close]"
 	}
 
 	page := m.list.Paginator.Page + 1
@@ -660,8 +675,14 @@ func (m Model) renderStatusBar() string {
 		pageInfo = fmt.Sprintf(" | Page: %d/%d", page, pages)
 	}
 
-	status := fmt.Sprintf("%s | %s | Hosts: %d/%d%s | %s",
-		mode, m.status, filtered, total, pageInfo, hints)
+	if hints != "" {
+		status := fmt.Sprintf("%s | Hosts: %d/%d%s | [? help] %s",
+			mode, filtered, total, pageInfo, hints)
+		return style.Render(status)
+	}
+
+	status := fmt.Sprintf("%s | Hosts: %d/%d%s | [? help]",
+		mode, filtered, total, pageInfo)
 
 	return style.Render(status)
 }
