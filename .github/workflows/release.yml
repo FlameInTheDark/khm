@@ -11,8 +11,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  semantic_release:
-    name: Semantic Release
+  release:
+    name: Semantic Release + GoReleaser
     runs-on: ubuntu-latest
 
     steps:
@@ -38,7 +38,66 @@ jobs:
             @semantic-release/release-notes-generator \
             conventional-changelog-conventionalcommits
 
-      - name: Run semantic-release
+      - name: Run semantic-release (JSON output)
+        id: semantic
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+        run: |
+          npx semantic-release --debug --branches main > semantic-release.log || {
+            status=$?
+            echo "semantic-release exit code: $status"
+            cat semantic-release.log
+            # If semantic-release exits with 0: release created/updated or nothing to do.
+            # If exit code is 1: real error -> fail.
+            if [ $status -ne 0 ]; then
+              exit $status
+            fi
+          }
+
+          # Extract the last 'nextRelease' block (if any) as JSON with jq-like parsing via node.
+          # This picks up the new version/tag if a release was created.
+          TAG=$(node -e "
+            const fs = require('fs');
+            const txt = fs.readFileSync('semantic-release.log', 'utf8');
+            const m = txt.match(/nextRelease[\\s\\S]*?\"version\":\\s*\"([^\"]+)\"/);
+            if (m) {
+              const v = m[1];
+              process.stdout.write('v' + v);
+            }
+          " || true)
+
+          echo "Detected release tag: $TAG"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Stop if no new release
+        if: steps.semantic.outputs.tag == ''
+        run: |
+          echo "No new release was created by semantic-release; skipping GoReleaser."
+
+      - name: Set up Go
+        if: steps.semantic.outputs.tag != ''
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ./go.mod
+          cache: true
+
+      - name: Install GoReleaser
+        if: steps.semantic.outputs.tag != ''
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          install-only: true
+
+      - name: Checkout release tag
+        if: steps.semantic.outputs.tag != ''
+        run: |
+          TAG="${{ steps.semantic.outputs.tag }}"
+          echo "Checking out tag $TAG for GoReleaser"
+          git fetch --tags --force
+          git checkout "$TAG"
+          git describe --tags --abbrev=0
+
+      - name: Run GoReleaser
+        if: steps.semantic.outputs.tag != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goreleaser release --clean
