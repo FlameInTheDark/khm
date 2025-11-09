@@ -4,6 +4,10 @@ A compact CLI and TUI tool for managing SSH known_hosts files.
 
 ## Installation
 
+### Download
+
+Download from [releases](https://github.com/FlameInTheDark/khm/releases/latest)
+
 ### Using Go install
 
 ```bash
