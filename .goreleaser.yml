@@ -111,12 +111,6 @@ blobs:
 # so it's easier to inspect locally. In CI we expect clean runs anyway.
 dist: dist
 
-# Enforce that we run in CI for actual releases.
-ci:
-  # If you want to allow local releases, set this to false.
-  # Recommended: keep true so real releases happen only in CI.
-  enabled: true
-
 # Ensure we only run on tags that look like a version as semantic-release creates.
 # This is defensive and aligns with semantic-release's behavior.
 git:
