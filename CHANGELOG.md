@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.0](https://github.com/FlameInTheDark/khm/compare/v1.2.0...v1.3.0) (2025-11-09)
+
+### Features
+
+* refined ui elements ([ed3b403](https://github.com/FlameInTheDark/khm/commit/ed3b403ff52271086811ed69ccc00a8c103daa67))
+
 ## [1.2.0](https://github.com/FlameInTheDark/khm/compare/v1.1.0...v1.2.0) (2025-11-09)
 
 ### Features
