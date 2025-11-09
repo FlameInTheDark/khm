@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout (full history for tags)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -38,66 +38,71 @@ jobs:
             @semantic-release/release-notes-generator \
             conventional-changelog-conventionalcommits
 
-      - name: Run semantic-release (JSON output)
+      - name: Run semantic-release
         id: semantic
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npx semantic-release --debug --branches main > semantic-release.log || {
-            status=$?
-            echo "semantic-release exit code: $status"
-            cat semantic-release.log
-            # If semantic-release exits with 0: release created/updated or nothing to do.
-            # If exit code is 1: real error -> fail.
-            if [ $status -ne 0 ]; then
-              exit $status
-            fi
-          }
+          # Run semantic-release normally.
+          # It will:
+          # - Determine next version from commits
+          # - Create/update tag (vX.Y.Z)
+          # - Create/update GitHub Release
+          npx semantic-release
 
-          # Extract the last 'nextRelease' block (if any) as JSON with jq-like parsing via node.
-          # This picks up the new version/tag if a release was created.
-          TAG=$(node -e "
-            const fs = require('fs');
-            const txt = fs.readFileSync('semantic-release.log', 'utf8');
-            const m = txt.match(/nextRelease[\\s\\S]*?\"version\":\\s*\"([^\"]+)\"/);
-            if (m) {
-              const v = m[1];
-              process.stdout.write('v' + v);
-            }
-          " || true)
+          # Note:
+          # We intentionally do NOT try to parse semantic-release logs here.
+          # Instead, we rely on git tags afterwards to detect the latest release tag.
 
-          echo "Detected release tag: $TAG"
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
-
-      - name: Stop if no new release
-        if: steps.semantic.outputs.tag == ''
+      - name: Detect latest tag after semantic-release
+        id: detect_tag
         run: |
-          echo "No new release was created by semantic-release; skipping GoReleaser."
+          # Refresh tags from origin to ensure we see tags pushed by semantic-release.
+          git fetch --tags --force
+
+          # If there are no tags, nothing to build.
+          if ! git describe --tags --abbrev=0 >/dev/null 2>&1; then
+            echo "No tags found after semantic-release; skipping GoReleaser."
+            echo "tag=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Get the latest tag (semantic-release uses annotated tags following vX.Y.Z).
+          TAG=$(git describe --tags --abbrev=0)
+          echo "Latest tag detected: $TAG"
+
+          # Expose it as job output for later steps.
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Skip GoReleaser if no tag
+        if: steps.detect_tag.outputs.tag == ''
+        run: |
+          echo "No release tag detected; GoReleaser will not run."
 
       - name: Set up Go
-        if: steps.semantic.outputs.tag != ''
+        if: steps.detect_tag.outputs.tag != ''
         uses: actions/setup-go@v5
         with:
           go-version-file: ./go.mod
           cache: true
 
       - name: Install GoReleaser
-        if: steps.semantic.outputs.tag != ''
+        if: steps.detect_tag.outputs.tag != ''
         uses: goreleaser/goreleaser-action@v6
         with:
           install-only: true
 
       - name: Checkout release tag
-        if: steps.semantic.outputs.tag != ''
+        if: steps.detect_tag.outputs.tag != ''
         run: |
-          TAG="${{ steps.semantic.outputs.tag }}"
+          TAG="${{ steps.detect_tag.outputs.tag }}"
           echo "Checking out tag $TAG for GoReleaser"
           git fetch --tags --force
           git checkout "$TAG"
           git describe --tags --abbrev=0
 
       - name: Run GoReleaser
-        if: steps.semantic.outputs.tag != ''
+        if: steps.detect_tag.outputs.tag != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: goreleaser release --clean
