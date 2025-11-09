@@ -2,7 +2,7 @@ name: GoReleaser
 
 on:
   release:
-    types: [published]
+    types: [released]
 
 permissions:
   contents: write
