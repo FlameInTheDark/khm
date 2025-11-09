@@ -10,7 +10,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-func runUI(knownHostsPath string) error {
+func runUI(knownHostsPath, version string) error {
 	collection, err := knownhosts.ParseKnownHosts(knownHostsPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -20,7 +20,7 @@ func runUI(knownHostsPath string) error {
 		}
 	}
 
-	model := ui.NewModel(collection)
+	model := ui.NewModel(collection, version)
 	p := tea.NewProgram(model, tea.WithAltScreen())
 
 	if _, err := p.Run(); err != nil {

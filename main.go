@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	version = "1.0.0"
+	version = "dev"
 	rootCmd *cobra.Command
 )
 
@@ -33,7 +33,7 @@ func init() {
 
 			}
 
-			if err := runUI(path); err != nil {
+			if err := runUI(path, version); err != nil {
 
 				log.Fatal(err)
 
@@ -107,7 +107,7 @@ func uiCmd() *cobra.Command {
 			if path == "" {
 				path = getKnownHostsPath()
 			}
-			if err := runUI(path); err != nil {
+			if err := runUI(path, version); err != nil {
 				log.Fatal(err)
 			}
 		},
