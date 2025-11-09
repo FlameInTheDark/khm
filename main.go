@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"runtime/debug"
 
 	"github.com/charmbracelet/log"
 	"github.com/spf13/cobra"
@@ -13,6 +14,9 @@ var (
 )
 
 func init() {
+	if info, ok := debug.ReadBuildInfo(); ok && version == "dev" {
+		version = info.Main.Version
+	}
 
 	rootCmd = &cobra.Command{
 
