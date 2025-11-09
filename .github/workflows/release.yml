@@ -101,6 +101,11 @@ jobs:
           git checkout "$TAG"
           git describe --tags --abbrev=0
 
+      - name: Remove semantic-release temporary files
+        if: steps.detect_tag.outputs.tag != ''
+        run: |
+          rm -rf node_modules package-lock.json package.json
+
       - name: Run GoReleaser
         if: steps.detect_tag.outputs.tag != ''
         env:
