@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.0](https://github.com/FlameInTheDark/khm/compare/v1.0.0...v1.1.0) (2025-11-09)
+
+### Features
+
+* display version in UI and help output ([8c5cd30](https://github.com/FlameInTheDark/khm/commit/8c5cd30b5615fee83fbb3f98df0d1fb07eed89d2))
+
+### Bug Fixes
+
+* **ci:** revert to trigger goreleaser on release published ([132ab7f](https://github.com/FlameInTheDark/khm/commit/132ab7fa9cfefb6cb874e93e909085917c2345b7))
+* **ci:** trigger goreleaser on release released ([e6f7325](https://github.com/FlameInTheDark/khm/commit/e6f73258a0cc4bd87776337b6eb230e4e4cf28f9))
+
 ## 1.0.0 (2025-11-09)
 
 ### Features
